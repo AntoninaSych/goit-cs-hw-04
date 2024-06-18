@@ -1,0 +1,3 @@
+Another example of a text file.
+This one also contains multiple lines of text.
+You can find keyword2 in this file.
