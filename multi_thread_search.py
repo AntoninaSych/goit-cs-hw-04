@@ -19,16 +19,16 @@ def search_in_file(file_path, results):
     except Exception as e:
         print(f"Error processing file {file_path}: {e}")
 
-def worker(files, results):
-    while not files.empty():
-        file_path = files.get()
+def worker(files_queue, results):
+    while True:
+        file_path = files_queue.get()
         if file_path is None:
             break
         search_in_file(file_path, results)
-        files.task_done()
+        files_queue.task_done()
 
 def main():
-    files = Queue()
+    files_queue = Queue()
     results = {keyword: [] for keyword in KEYWORDS}
 
     # Додавання файлів у чергу
@@ -36,24 +36,25 @@ def main():
         for file_name in os.listdir(DIRECTORY):
             file_path = os.path.join(DIRECTORY, file_name)
             if os.path.isfile(file_path):
-                files.put(file_path)
+                files_queue.put(file_path)
     except Exception as e:
         print(f"Error reading directory {DIRECTORY}: {e}")
         return
 
     # Створення та запуск потоків
+    num_threads = 4
     threads = []
-    for _ in range(4):  # Кількість потоків
-        thread = threading.Thread(target=worker, args=(files, results))
+    for _ in range(num_threads):
+        thread = threading.Thread(target=worker, args=(files_queue, results))
         thread.start()
         threads.append(thread)
 
     # Очікування завершення черги
-    files.join()
+    files_queue.join()
 
     # Завершення потоків
     for _ in threads:
-        files.put(None)
+        files_queue.put(None)
     for thread in threads:
         thread.join()
 

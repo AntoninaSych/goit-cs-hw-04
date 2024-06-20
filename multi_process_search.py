@@ -8,17 +8,18 @@ KEYWORDS = ["keyword1", "keyword2", "keyword3"]
 # Директорія з текстовими файлами
 DIRECTORY = "test_files"
 
-def search_in_file(file_path, results_queue):
+def search_in_files(file_paths, results_queue):
     results = {keyword: [] for keyword in KEYWORDS}
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            text = file.read()
-            for keyword in KEYWORDS:
-                if keyword in text:
-                    results[keyword].append(file_path)
-        results_queue.put(results)
-    except Exception as e:
-        print(f"Error processing file {file_path}: {e}")
+    for file_path in file_paths:
+        try:
+            with open(file_path, 'r', encoding='utf-8') as file:
+                text = file.read()
+                for keyword in KEYWORDS:
+                    if keyword in text:
+                        results[keyword].append(file_path)
+        except Exception as e:
+            print(f"Error processing file {file_path}: {e}")
+    results_queue.put(results)
 
 def main():
     manager = multiprocessing.Manager()
@@ -35,10 +36,14 @@ def main():
         print(f"Error reading directory {DIRECTORY}: {e}")
         return
 
+    # Розподіл файлів на підсписки
+    num_processes = os.cpu_count()
+    file_chunks = [files[i::num_processes] for i in range(num_processes)]
+
     # Створення та запуск процесів
     processes = []
-    for file_path in files:
-        process = multiprocessing.Process(target=search_in_file, args=(file_path, results_queue))
+    for chunk in file_chunks:
+        process = multiprocessing.Process(target=search_in_files, args=(chunk, results_queue))
         process.start()
         processes.append(process)
 
