@@ -10,11 +10,14 @@ KEYWORDS = ["keyword1", "keyword2", "keyword3"]
 DIRECTORY = "test_files"
 
 def search_in_file(file_path, results):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        text = file.read()
-        for keyword in KEYWORDS:
-            if keyword in text:
-                results[keyword].append(file_path)
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            text = file.read()
+            for keyword in KEYWORDS:
+                if keyword in text:
+                    results[keyword].append(file_path)
+    except Exception as e:
+        print(f"Error processing file {file_path}: {e}")
 
 def worker(files, results):
     while not files.empty():
@@ -29,10 +32,14 @@ def main():
     results = {keyword: [] for keyword in KEYWORDS}
 
     # Додавання файлів у чергу
-    for file_name in os.listdir(DIRECTORY):
-        file_path = os.path.join(DIRECTORY, file_name)
-        if os.path.isfile(file_path):
-            files.put(file_path)
+    try:
+        for file_name in os.listdir(DIRECTORY):
+            file_path = os.path.join(DIRECTORY, file_name)
+            if os.path.isfile(file_path):
+                files.put(file_path)
+    except Exception as e:
+        print(f"Error reading directory {DIRECTORY}: {e}")
+        return
 
     # Створення та запуск потоків
     threads = []
